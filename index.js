@@ -9,11 +9,81 @@ const app = new App({
   socketMode: true,
 });
 
+let gameState = {
+  isActive: false,
+  currentHolder: null,
+  timerId: null,
+  channelId: null,
+  fuseLength: 0,
+};
+
+let friedLeaderboard = {};
+let successfulpasses = {};
+
+function getRandomSeconds(min, max) {
+  const minCeiled = Math.ceil(min);
+  const maxFloored = Math.floor(max);
+
+  return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
+}
+
+function explodePotato() {
+  if (!gameState.isActive) return;
+
+  const victim = gameState.currentHolder;
+  const channel = gameState.channelId;
+
+  if (!friedLeaderboard[victim]) {
+    friedLeaderboard[victim] = 0;
+  }
+  friedLeaderboard[victim]++;
+
+  gameState.isActive = false;
+  gameState.currentHolder = null;
+  gameState.timerId = null;
+
+  app.client.chat
+    .postMessage({
+      channel: channel,
+      text: `💥FAHHH. The potato exploded in <@${victim}>'s hands!\n💀 Total losses for them: *${friedLeaderboard[victim]}*`,
+    })
+    .catch((error) => console.error("Slack postMessage error:", error));
+}
+
 app.command("/ssb-ping", async ({ command, ack, respond }) => {
   const start = Date.now();
   await ack();
   const latency = Date.now() - start;
   await respond({ text: `Pong!\nLatency: ${latency}ms` });
+});
+
+app.command("/drop-potato", async ({ command, ack, respond }) => {
+  await ack();
+
+  if (gameState.isActive) {
+    await respond({
+      text: `A game is already active! <@${gameState.currentHolder}> is holding the potato.`,
+    });
+    return;
+  }
+
+  const randomFuse = getRandomSeconds(20, 46);
+
+  gameState.isActive = true;
+  gameState.currentHolder = command.user_id;
+  gameState.channelId = command.channel_id;
+  gameState.fuseLength = randomFuse;
+
+  gameState.timerId = setTimeout(explodePotato, randomFuse * 1000);
+
+  try {
+    await app.client.chat.postMessage({
+      channel: command.channel_id,
+      text: `Hot potato started! <@${command.user_id}> has it. Run /pass @user quickly!`,
+    });
+  } catch (error) {
+    console.error("Failed to start game:", error);
+  }
 });
 
 app.command("/ssb-help", async ({ ack, respond }) => {
