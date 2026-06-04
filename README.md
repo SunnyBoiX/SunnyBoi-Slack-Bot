@@ -1,3 +1,3 @@
-# SunnyBoi-Slack-Bot
+# Potatpheus
 
 hello world
