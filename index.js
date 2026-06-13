@@ -87,7 +87,7 @@ app.command("/drop-potato", async ({ command, ack, respond }) => {
 });
 
 app.command("/pass", async ({ command, ack, respond }) => {
-  await ack;
+  await ack();
   try {
     if (!gameState.isActive) {
       await respond({
