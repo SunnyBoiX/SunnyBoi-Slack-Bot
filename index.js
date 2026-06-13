@@ -88,49 +88,51 @@ app.command("/drop-potato", async ({ command, ack, respond }) => {
 
 app.command("/pass", async ({ command, ack, respond }) => {
   await ack;
-
-  if (!gameState.isActive) {
-    await respond({
-      text: "There is no active hot potato game :( . Start one with '/drop-potato'.",
-    });
-    return;
-  }
-
-  if (command.user_id !== gameState.currentHolder) {
-    await respond({
-      text: "You don't have the potato >:(. You can't pass it.",
-    });
-    return;
-  }
-
-  const text = command.text.trim();
-  const userMatch = text.match(/<@(\w+)/);
-
-  if (!userMatch) {
-    await respond({
-      text: "Please specify who you want to pass the potato to! Example: '/pass @Sunjot'",
-    });
-    return;
-  }
-
-  const targetUser = userMatch[1];
-
-  if (targetUser === command.user_id) {
-    await respond({
-      text: "What are you doing?! Tryna be a hero eh? NOT HERE. GO TOSS IT TO SOMEONE ELSE, QUICK! ",
-    });
-    return;
-  }
-
-  gameState.currentHolder = targetUser;
-
   try {
+    if (!gameState.isActive) {
+      await respond({
+        text: "There is no active hot potato game :( . Start one with '/drop-potato'.",
+      });
+      return;
+    }
+
+    if (command.user_id !== gameState.currentHolder) {
+      await respond({
+        text: "You don't have the potato >:(. You can't pass it.",
+      });
+      return;
+    }
+
+    const text = command.text.trim();
+    const userMatch = text.match(/<@(\w+)/);
+
+    if (!userMatch) {
+      await respond({
+        text: "Please specify who you want to pass the potato to! Example: '/pass @Sunjot'",
+      });
+      return;
+    }
+
+    const targetUser = userMatch[1];
+
+    if (targetUser === command.user_id) {
+      await respond({
+        text: "What are you doing?! Tryna be a hero eh? NOT HERE. GO TOSS IT TO SOMEONE ELSE, QUICK! ",
+      });
+      return;
+    }
+
+    gameState.currentHolder = targetUser;
+
     await app.client.chat.postMessage({
       channel: gameState.channelId,
       text: "<@${sender}> successfully tossed the potato to <@${targetUser}>! Quick, toss it onward!",
     });
   } catch (error) {
-    console.error("Failed to announce pass:", error);
+    console.error("Error processing /pass command:", eror);
+    await respond({
+      text: "internal error occured while trying to pass the potato. ",
+    });
   }
 });
 
